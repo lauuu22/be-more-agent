@@ -639,8 +639,8 @@ class BotGUI:
                         # Se imprime un aviso visual en consola pero NO se interrumpe la ejecución
                         print("!", end="", flush=True) 
                 except Exception as e:
-                    print(f"\n[AUDIO WARNING] Error temporal leyendo del stream: {e}", flush=True)
-                    continue
+                    print(f"\n[AUDIO ERROR] El stream de audio se interrumpió: {e}", flush=True)
+                    raise RuntimeError(f"Stream invalido: {e}")
 
                 audio_data = np.frombuffer(data, dtype=np.int16)
 
