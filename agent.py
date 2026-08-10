@@ -522,7 +522,10 @@ class BotGUI:
             self.tts_thread.start()
             
             while True:
-                trigger_source = self.detect_wake_word_or_ptt()
+                trigger_source = self.detect_wake_word_or_ptt() 
+                sd.stop()
+                time.sleep(0.4) 
+    
                 if self.interrupted.is_set():
                     self.interrupted.clear()
                     self.set_state(BotStates.IDLE, "Resetting...")
@@ -636,11 +639,10 @@ class BotGUI:
                 try:
                     data, overflow = stream.read(read_size)
                     if overflow:
-                        # Se imprime un aviso visual en consola pero NO se interrumpe la ejecución
                         print("!", end="", flush=True) 
                 except Exception as e:
-                    print(f"\n[AUDIO ERROR] El stream de audio se interrumpió: {e}", flush=True)
-                    raise RuntimeError(f"Stream invalido: {e}")
+                    print(f"\n[AUDIO WARNING] Error de lectura: {e}", flush=True)
+                    continue
 
                 audio_data = np.frombuffer(data, dtype=np.int16)
 
@@ -753,15 +755,19 @@ class BotGUI:
             result = subprocess.run(
                 ["./whisper.cpp/build/bin/whisper-cli", "-m", "./whisper.cpp/models/ggml-base.en.bin", "-l", "en", "-t", "4", "-f", filename],
                 capture_output=True, text=True
-            )
-            transcription_lines = result.stdout.strip().split('\n')
-            if transcription_lines and transcription_lines[-1].strip():
-                last_line = transcription_lines[-1].strip()
-                if ']' in last_line: transcription = last_line.split("]")[1].strip()
-                else: transcription = last_line
-            else: transcription = ""
+            )    
+            lines = result.stdout.strip().split('\n')
+            text_parts = []
+            for line in lines:
+                line = line.strip()
+                if ']' in line:
+                    line = line.split("]", 1)[1].strip()
+                if line:
+                    text_parts.append(line)
+        
+            transcription = " ".join(text_parts).strip()
             print(f"Heard: '{transcription}'", flush=True)
-            return transcription.strip()
+            return transcription
         except Exception as e:
             print(f"Transcription Error: {e}")
             return ""
